@@ -1,1 +1,3 @@
-# quality-defect-tracking-system-241675
+# Project Repository
+
+This is the initial README file for the project.
