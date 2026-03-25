@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { computeSummary, deleteDefect } from "@/lib/storage";
+import { useRef, useState } from "react";
+import { computeSummary, deleteDefect, downloadStoreJson, importStoreJsonFile, resetToSampleData } from "@/lib/storage";
 import { useDefectsStore, notifyStoreUpdated } from "@/lib/useLocalStore";
 import { SeverityBadge, StatusBadge, formatDate } from "@/components/Badges";
 
@@ -10,6 +11,9 @@ export default function DashboardPage() {
   const { defects } = useDefectsStore();
 
   const summary = useMemo(() => computeSummary(defects), [defects]);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   return (
     <div className="grid">
@@ -38,6 +42,82 @@ export default function DashboardPage() {
           <span className={`badge ${summary.overdueActions > 0 ? "danger" : ""}`}>
             Overdue actions: <strong>{summary.overdueActions}</strong>
           </span>
+        </div>
+
+        <div className="hr" />
+
+        <div className="callout" aria-label="Data tools">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 800 }}>Data tools</div>
+              <div className="subtle">Export/import your localStorage dataset as JSON. No backend.</div>
+              {importMsg ? (
+                <div className="subtle" style={{ marginTop: 6 }}>
+                  {importMsg}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="row" style={{ justifyContent: "flex-end" }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  downloadStoreJson();
+                }}
+              >
+                Export JSON
+              </button>
+
+              <button
+                className="btn"
+                onClick={() => {
+                  setImportMsg(null);
+                  fileInputRef.current?.click();
+                }}
+              >
+                Import JSON
+              </button>
+
+              <button
+                className="btn btnDanger"
+                onClick={() => {
+                  const ok = window.confirm("Reset local data to sample dataset? This will overwrite your current localStorage data.");
+                  if (!ok) return;
+                  resetToSampleData();
+                  notifyStoreUpdated();
+                  setImportMsg("Reset complete (sample data restored).");
+                }}
+              >
+                Reset to sample data
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.item(0) ?? null;
+                  // Allow selecting the same file again later
+                  e.currentTarget.value = "";
+                  if (!file) return;
+
+                  void (async () => {
+                    const ok = window.confirm("Import will overwrite your current localStorage dataset. Continue?");
+                    if (!ok) return;
+
+                    const res = await importStoreJsonFile(file, { overwrite: true });
+                    if (!res.ok) {
+                      setImportMsg(`Import failed: ${res.error ?? "Unknown error"}`);
+                      return;
+                    }
+                    notifyStoreUpdated();
+                    setImportMsg("Import complete.");
+                  })();
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="hr" />

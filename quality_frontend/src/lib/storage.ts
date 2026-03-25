@@ -70,7 +70,10 @@ function safeParseStore(raw: string | null): Store | null {
 
 function defaultSeed(): Store {
   const createdAt = nowIso();
-  const occurredAt = todayIsoDate();
+  const today = todayIsoDate();
+
+  // Provide a small, varied dataset so dashboard + analytics have something meaningful to show.
+  // Note: imageBase64 is intentionally omitted to avoid bloating localStorage.
   return {
     version: STORAGE_VERSION,
     defects: [
@@ -82,7 +85,7 @@ function defaultSeed(): Store {
         line: "Line 2",
         shift: "A",
         severity: "Medium",
-        occurredAt,
+        occurredAt: today,
         status: "Open",
         assignedTo: "Unassigned",
         rootCause: "",
@@ -92,8 +95,76 @@ function defaultSeed(): Store {
             id: uid("act"),
             title: "Inspect upstream handling process",
             owner: "Quality",
-            dueDate: occurredAt,
+            dueDate: today,
             status: "Open",
+            createdAt
+          }
+        ],
+        createdAt,
+        updatedAt: createdAt
+      },
+      {
+        id: uid("def"),
+        partNumber: "PN-88410",
+        defectType: "Missing label",
+        quantity: 12,
+        line: "Line 1",
+        shift: "B",
+        severity: "High",
+        occurredAt: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10),
+        status: "In Progress",
+        assignedTo: "Supervisor",
+        rootCause: "",
+        notes: "Containment: 100% check on finished goods for this part number.",
+        actions: [
+          {
+            id: uid("act"),
+            title: "Verify label printer settings + sensor alignment",
+            owner: "Maintenance",
+            dueDate: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10),
+            status: "Open",
+            createdAt
+          },
+          {
+            id: uid("act"),
+            title: "Update label work instruction and retrain shift B",
+            owner: "Quality",
+            dueDate: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
+            status: "Open",
+            createdAt
+          }
+        ],
+        createdAt,
+        updatedAt: createdAt
+      },
+      {
+        id: uid("def"),
+        partNumber: "PN-55002",
+        defectType: "Crack",
+        quantity: 1,
+        line: "Line 3",
+        shift: "C",
+        severity: "Critical",
+        occurredAt: new Date(Date.now() - 86400000 * 10).toISOString().slice(0, 10),
+        status: "Complete",
+        assignedTo: "Quality",
+        rootCause: "Tooling wear caused excessive press force.",
+        notes: "Corrective action implemented; monitoring for recurrence.",
+        actions: [
+          {
+            id: uid("act"),
+            title: "Replace worn tooling insert",
+            owner: "Maintenance",
+            dueDate: new Date(Date.now() - 86400000 * 9).toISOString().slice(0, 10),
+            status: "Done",
+            createdAt
+          },
+          {
+            id: uid("act"),
+            title: "Add tooling inspection to weekly PM checklist",
+            owner: "Engineering",
+            dueDate: new Date(Date.now() - 86400000 * 7).toISOString().slice(0, 10),
+            status: "Done",
             createdAt
           }
         ],
@@ -245,6 +316,150 @@ export function setDefectStatus(defectId: string, status: DefectStatus): { ok: b
 
   updateDefect(defectId, { status });
   return { ok: true };
+}
+
+/**
+ * Download a text blob as a file (client-side only).
+ */
+function downloadTextFile(filename: string, text: string, mimeType = "application/json") {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Read a File into a string (client-side only).
+ */
+async function readFileAsText(file: File): Promise<string> {
+  const reader = new FileReader();
+  return await new Promise<string>((resolve, reject) => {
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsText(file);
+  });
+}
+
+// PUBLIC_INTERFACE
+export function exportStoreJson(pretty = true): string {
+  /** Export the entire local defect store as a JSON string. */
+  const store = readOrInitStore();
+  const payload = {
+    version: store.version,
+    exportedAt: nowIso(),
+    defects: store.defects
+  };
+  return JSON.stringify(payload, null, pretty ? 2 : 0);
+}
+
+// PUBLIC_INTERFACE
+export function downloadStoreJson(filename?: string): void {
+  /** Download the entire local defect store as a JSON file. */
+  if (typeof window === "undefined") return;
+  const name = filename ?? `qdt-export-${todayIsoDate()}.json`;
+  downloadTextFile(name, exportStoreJson(true));
+}
+
+function coerceStoreFromUnknown(input: unknown): Store | null {
+  // Accept either a raw store shape or an export wrapper (version/exportedAt/defects).
+  if (!input || typeof input !== "object") return null;
+
+  const raw = input as Record<string, unknown>;
+  const maybeStore =
+    raw && typeof raw.version === "number" && Array.isArray(raw.defects)
+      ? raw
+      : raw && raw.store && typeof raw.store === "object"
+        ? (raw.store as Record<string, unknown>)
+        : null;
+
+  const wrapper = raw && typeof raw.version === "number" && Array.isArray(raw.defects) ? raw : null;
+
+  const candidate = (maybeStore ?? wrapper) as unknown;
+
+  const validated = StoreSchema.safeParse(candidate);
+  if (!validated.success) return null;
+  return validated.data;
+}
+
+// PUBLIC_INTERFACE
+export function importStoreJsonString(jsonText: string, opts?: { overwrite?: boolean }): { ok: boolean; error?: string } {
+  /**
+   * Import defects from a JSON string.
+   * - Validates shape with Zod.
+   * - By default, overwrites the existing store (overwrite=true).
+   */
+  if (typeof window === "undefined") return { ok: false, error: "Import is only available in the browser." };
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    return { ok: false, error: "Invalid JSON." };
+  }
+
+  const store = coerceStoreFromUnknown(parsed);
+  if (!store) {
+    return { ok: false, error: "JSON does not match the expected store format." };
+  }
+
+  const overwrite = opts?.overwrite ?? true;
+
+  if (!overwrite) {
+    // Merge mode: append defects, but avoid duplicate ids by re-uid'ing conflicts.
+    const existing = readOrInitStore();
+    const existingIds = new Set(existing.defects.map((d) => d.id));
+    const mergedDefects: Defect[] = [...existing.defects];
+
+    for (const d of store.defects) {
+      if (!existingIds.has(d.id)) {
+        mergedDefects.push(d);
+        existingIds.add(d.id);
+        continue;
+      }
+      // If there's an id clash, clone with new ids (defect + action ids) to keep referential safety.
+      const newDefectId = uid("def");
+      mergedDefects.push({
+        ...d,
+        id: newDefectId,
+        actions: d.actions.map((a) => ({ ...a, id: uid("act") })),
+        updatedAt: nowIso()
+      });
+    }
+
+    const next: Store = { version: STORAGE_VERSION, defects: mergedDefects };
+    writeStore(next);
+    return { ok: true };
+  }
+
+  // Overwrite mode: normalize to current version.
+  const normalized: Store = { version: STORAGE_VERSION, defects: store.defects };
+  writeStore(normalized);
+  return { ok: true };
+}
+
+// PUBLIC_INTERFACE
+export async function importStoreJsonFile(file: File, opts?: { overwrite?: boolean }): Promise<{ ok: boolean; error?: string }> {
+  /** Import defects from a user-selected JSON file. */
+  if (typeof window === "undefined") return { ok: false, error: "Import is only available in the browser." };
+  try {
+    const text = await readFileAsText(file);
+    return importStoreJsonString(text, opts);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to import file." };
+  }
+}
+
+// PUBLIC_INTERFACE
+export function resetToSampleData(): void {
+  /** Reset localStorage store to the built-in sample dataset. */
+  if (typeof window === "undefined") return;
+  writeStore(defaultSeed());
 }
 
 // PUBLIC_INTERFACE
