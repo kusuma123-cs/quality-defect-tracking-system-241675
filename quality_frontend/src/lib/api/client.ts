@@ -20,11 +20,19 @@ import {
 const DEFAULT_BASE_URL = "http://localhost:3001";
 
 /**
- * Prefer explicit NEXT_PUBLIC_API_BASE_URL if present; otherwise default to localhost:3001.
- * This supports direct browser-to-backend calls.
+ * Prefer an explicit env base URL for browser-to-backend calls.
+ *
+ * In this repo's preview environment, the orchestrator provides NEXT_PUBLIC_API_BASE
+ * (and sometimes NEXT_PUBLIC_BACKEND_URL), not NEXT_PUBLIC_API_BASE_URL.
+ * If none are set, we fall back to localhost for local development only.
  */
 function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
+  return (
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE?.trim() ||
+    process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+    DEFAULT_BASE_URL
+  );
 }
 
 function safeJsonParse(text: string) {
