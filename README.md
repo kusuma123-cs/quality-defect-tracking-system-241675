@@ -1,7 +1,26 @@
-# Project Repository
+# Quality Defect Tracking System (Frontend-only)
 
-This is the initial README file for the project.
+This repository contains the **frontend-only** version of a quality defect tracking application.
 
-## Lint/format status
+## Key behavior
 
-At the moment, this repository contains no frontend source code (e.g., no `package.json`, `next.config.*`, `src/`, `pages/`, etc.), so there are no linting/formatting issues to address yet. Once the Next.js app scaffold and lint/format configuration are added, lint/format can be applied according to those project settings.
+- **No backend / no API calls**
+- **No fetch()**
+- All defects, corrective actions, workflow status, and analytics are persisted in **browser localStorage**.
+- Images are stored as **base64 data URLs** (note: large images may exceed browser storage limits).
+
+## Run locally
+
+```bash
+cd quality_frontend
+npm install
+npm run dev
+```
+
+Then open: http://localhost:3000
+
+## Data storage
+
+- localStorage key: `qdt:v1`
+- If storage is missing or corrupted, the app auto-seeds one sample defect to demonstrate the workflow.
+"
