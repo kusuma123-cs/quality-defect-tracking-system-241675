@@ -15,6 +15,7 @@ import {
 } from "@/lib/storage";
 import { notifyStoreUpdated, useDefectsStore } from "@/lib/useLocalStore";
 import { SeverityBadge, StatusBadge, formatDate } from "@/components/Badges";
+import { IconArrowLeft, IconTrash, IconPlus, IconClipboardList, IconAlertTriangle } from "@/components/Icons";
 
 export default function DefectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -38,7 +39,7 @@ export default function DefectDetailPage() {
         <h1 className="h1">Defect not found</h1>
         <p className="subtle">This defect does not exist in localStorage.</p>
         <Link className="btn" href="/">
-          Back to dashboard
+          <IconArrowLeft /> Back to dashboard
         </Link>
       </section>
     );
@@ -57,18 +58,26 @@ export default function DefectDetailPage() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div className="stack">
       <section className="card">
         <div className="cardHeader">
           <div>
-            <h1 className="h1">
-              {defect.defectType} <span className="subtle">({defect.partNumber})</span>
-            </h1>
-            <div className="subtle mono">{defect.id}</div>
+            <div className="cardTitleRow">
+              <div className="cardIcon" aria-hidden="true">
+                <IconClipboardList />
+              </div>
+              <div>
+                <h1 className="h1">
+                  {defect.defectType} <span className="subtle">({defect.partNumber})</span>
+                </h1>
+                <div className="subtle mono">{defect.id}</div>
+              </div>
+            </div>
           </div>
+
           <div className="row">
             <Link className="btn" href="/">
-              ← Dashboard
+              <IconArrowLeft /> Dashboard
             </Link>
             <button
               className="btn btnDanger"
@@ -80,7 +89,7 @@ export default function DefectDetailPage() {
                 router.push("/");
               }}
             >
-              Delete
+              <IconTrash /> Delete
             </button>
           </div>
         </div>
@@ -103,7 +112,14 @@ export default function DefectDetailPage() {
 
         {error ? (
           <div className="callout danger" style={{ marginTop: 12 }}>
-            <strong>Workflow rule:</strong> {error}
+            <div className="row" style={{ alignItems: "flex-start" }}>
+              <span aria-hidden="true" style={{ marginTop: 1 }}>
+                <IconAlertTriangle />
+              </span>
+              <div>
+                <strong>Workflow rule:</strong> {error}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -181,7 +197,9 @@ export default function DefectDetailPage() {
           <>
             <div className="hr" />
             <div>
-              <div className="h2">Image</div>
+              <div className="h2" style={{ color: "var(--text)" }}>
+                Image
+              </div>
               <div className="subtle">Stored locally as base64.</div>
               <div style={{ marginTop: 10 }}>
                 <img
@@ -189,9 +207,9 @@ export default function DefectDetailPage() {
                   alt="Defect"
                   style={{
                     width: "100%",
-                    maxHeight: 320,
+                    maxHeight: 340,
                     objectFit: "contain",
-                    borderRadius: 12,
+                    borderRadius: 14,
                     border: "1px solid var(--border)",
                     background: "rgba(17,24,39,0.02)"
                   }}
@@ -205,8 +223,19 @@ export default function DefectDetailPage() {
       <section className="card">
         <div className="cardHeader">
           <div>
-            <h2 className="h1">Corrective actions</h2>
-            <p className="subtle">Track actions, due dates, and completion. Overdue items are highlighted.</p>
+            <div className="cardTitleRow">
+              <div
+                className="cardIcon"
+                aria-hidden="true"
+                style={{ borderColor: "rgba(16,185,129,0.28)", background: "rgba(16,185,129,0.10)", color: "#047857" }}
+              >
+                <IconPlus />
+              </div>
+              <div>
+                <h2 className="h1">Corrective actions</h2>
+                <p className="subtle">Track actions, due dates, and completion. Overdue items are highlighted.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -217,7 +246,13 @@ export default function DefectDetailPage() {
             <label className="label" htmlFor="actionTitle">
               Action title
             </label>
-            <input id="actionTitle" className="input" value={newActionTitle} onChange={(e) => setNewActionTitle(e.target.value)} placeholder="e.g., Update work instruction / Train operators" />
+            <input
+              id="actionTitle"
+              className="input"
+              value={newActionTitle}
+              onChange={(e) => setNewActionTitle(e.target.value)}
+              placeholder="e.g., Update work instruction / Train operators"
+            />
           </div>
 
           <div>
@@ -249,7 +284,7 @@ export default function DefectDetailPage() {
                 notifyStoreUpdated();
               }}
             >
-              + Add action
+              <IconPlus /> Add action
             </button>
           </div>
         </div>
@@ -279,7 +314,7 @@ export default function DefectDetailPage() {
                   const overdue = a.status !== "Done" && a.dueDate < today;
                   return (
                     <tr key={a.id} style={overdue ? { background: "rgba(239,68,68,0.05)" } : undefined}>
-                      <td style={{ fontWeight: 650 }}>{a.title}</td>
+                      <td style={{ fontWeight: 750 }}>{a.title}</td>
                       <td>
                         <input
                           className="input"
@@ -313,7 +348,8 @@ export default function DefectDetailPage() {
                           <option value="Open">Open</option>
                           <option value="Done">Done</option>
                         </select>
-                        {overdue ? <div className="subtle" style={{ color: "#ef4444", fontWeight: 700 }}>Overdue</div> : null}
+
+                        {overdue ? <div className="subtle" style={{ color: "#ef4444", fontWeight: 800, marginTop: 6 }}>Overdue</div> : null}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <button
@@ -325,7 +361,7 @@ export default function DefectDetailPage() {
                             notifyStoreUpdated();
                           }}
                         >
-                          Delete
+                          <IconTrash /> Delete
                         </button>
                       </td>
                     </tr>

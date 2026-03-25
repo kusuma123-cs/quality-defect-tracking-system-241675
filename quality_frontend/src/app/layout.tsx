@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import NavLink from "@/components/NavLink";
+import { IconClipboardList, IconPlus, IconChart } from "@/components/Icons";
 
 /**
  * App metadata for the frontend-only quality defect tracking system.
@@ -25,9 +26,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
 
             <div className="navLinks">
-              <NavLink href="/">Dashboard</NavLink>
-              <NavLink href="/defects/new">Log Defect</NavLink>
-              <NavLink href="/analytics">Analytics</NavLink>
+              <NavLink href="/">
+                <span aria-hidden="true">
+                  <IconClipboardList size={16} />
+                </span>
+                Dashboard
+              </NavLink>
+              <NavLink href="/defects/new">
+                <span aria-hidden="true">
+                  <IconPlus size={16} />
+                </span>
+                Log Defect
+              </NavLink>
+              <NavLink href="/analytics">
+                <span aria-hidden="true">
+                  <IconChart size={16} />
+                </span>
+                Analytics
+              </NavLink>
               <span className="pill subtle">
                 Offline-first <span className="kbd">localStorage</span>
               </span>

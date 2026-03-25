@@ -1,15 +1,19 @@
 import type { DefectStatus, Severity } from "@/lib/types";
 
 function colorForSeverity(sev: Severity) {
+  // Severity cue must be visually distinct and intuitive:
+  // - Low: green (good)
+  // - Medium: yellow (attention)
+  // - High/Critical: red spectrum (urgent)
   switch (sev) {
     case "Low":
-      return "#64748b";
+      return "#10b981"; // green
     case "Medium":
-      return "#3b82f6";
+      return "#f59e0b"; // yellow
     case "High":
-      return "#f59e0b";
+      return "#ef4444"; // red
     case "Critical":
-      return "#ef4444";
+      return "#b91c1c"; // deep red
   }
 }
 

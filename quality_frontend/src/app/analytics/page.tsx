@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useDefectsStore } from "@/lib/useLocalStore";
+import { IconChart } from "@/components/Icons";
 
 const COLORS = ["#3b82f6", "#06b6d4", "#f59e0b", "#ef4444", "#64748b", "#8b5cf6", "#10b981"];
 
@@ -31,8 +32,15 @@ export default function AnalyticsPage() {
       <section className="card">
         <div className="cardHeader">
           <div>
-            <h1 className="h1">Analytics</h1>
-            <p className="subtle">Charts are computed in-browser from localStorage. No API calls.</p>
+            <div className="cardTitleRow">
+              <div className="cardIcon" aria-hidden="true">
+                <IconChart />
+              </div>
+              <div>
+                <h1 className="h1">Analytics</h1>
+                <p className="subtle">Charts are computed in-browser from localStorage. No API calls.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -62,8 +70,15 @@ export default function AnalyticsPage() {
       <section className="card">
         <div className="cardHeader">
           <div>
-            <h2 className="h1">Trend over time</h2>
-            <p className="subtle">Total quantity by day.</p>
+            <div className="cardTitleRow">
+              <div className="cardIcon" aria-hidden="true" style={{ borderColor: "rgba(6,182,212,0.28)", background: "rgba(6,182,212,0.10)", color: "#0e7490" }}>
+                <IconChart />
+              </div>
+              <div>
+                <h2 className="h1">Trend over time</h2>
+                <p className="subtle">Total quantity by day.</p>
+              </div>
+            </div>
           </div>
         </div>
 

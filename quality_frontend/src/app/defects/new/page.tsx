@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import type { Defect, Severity } from "@/lib/types";
 import { createDefect } from "@/lib/storage";
 import { notifyStoreUpdated } from "@/lib/useLocalStore";
+import { IconPlus, IconClipboardList, IconArrowLeft } from "@/components/Icons";
+import Link from "next/link";
 
 const severities: Severity[] = ["Low", "Medium", "High", "Critical"];
 
@@ -50,8 +52,24 @@ export default function NewDefectPage() {
     <section className="card">
       <div className="cardHeader">
         <div>
-          <h1 className="h1">Log defect</h1>
-          <p className="subtle">This form saves directly to localStorage. No backend required.</p>
+          <div className="cardTitleRow">
+            <div className="cardIcon" aria-hidden="true">
+              <IconPlus />
+            </div>
+            <div>
+              <h1 className="h1">Log defect</h1>
+              <p className="subtle">This form saves directly to localStorage. No backend required.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <Link className="btn" href="/">
+            <IconArrowLeft /> Dashboard
+          </Link>
+          <Link className="btn" href="/analytics">
+            <IconClipboardList /> Analytics
+          </Link>
         </div>
       </div>
 
@@ -108,6 +126,9 @@ export default function NewDefectPage() {
               </option>
             ))}
           </select>
+          <div className="subtle" style={{ marginTop: 6 }}>
+            Low/Medium/High/Critical uses <strong>green/yellow/red</strong> visual cues across the app.
+          </div>
         </div>
 
         <div>
@@ -163,7 +184,7 @@ export default function NewDefectPage() {
                   width: "100%",
                   maxHeight: 260,
                   objectFit: "contain",
-                  borderRadius: 12,
+                  borderRadius: 14,
                   border: "1px solid var(--border)",
                   background: "rgba(17,24,39,0.02)"
                 }}
@@ -200,7 +221,7 @@ export default function NewDefectPage() {
             router.push(`/defects/${defect.id}`);
           }}
         >
-          Save defect
+          <IconPlus /> Save defect
         </button>
 
         <button
