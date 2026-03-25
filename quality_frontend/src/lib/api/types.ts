@@ -1,7 +1,32 @@
 export type ID = number;
 
 export type Severity = "low" | "medium" | "high" | "critical";
-export type DefectStatus = "open" | "investigating" | "action_required" | "resolved" | "closed";
+
+/**
+ * Backend workflow statuses (FastAPI src/api/constants.py).
+ */
+export type DefectStatus =
+  | "open"
+  | "investigating"
+  | "corrective_action"
+  | "resolved"
+  | "verified"
+  | "closed";
+
+export type ActionStatus = "open" | "in_progress" | "done" | "canceled";
+
+export interface APIMessage {
+  message: string;
+}
+
+export interface ImageMeta {
+  id: ID;
+  defect_id: ID;
+  file_name?: string | null;
+  content_type: string;
+  url: string; // usually relative like /images/{id}
+  created_at: string; // ISO datetime
+}
 
 export interface Defect {
   id: ID;
@@ -9,30 +34,50 @@ export interface Defect {
   description: string;
   severity: Severity;
   status: DefectStatus;
-  rootCause?: string | null;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
-  imageBase64?: string | null; // stored/retrieved as base64 string if supported by backend
+
+  area?: string | null;
+  location?: string | null;
+  reported_by?: string | null;
+  assigned_to?: string | null;
+  due_date?: string | null; // YYYY-MM-DD
+
+  root_cause?: string | null;
+
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
+
+  images: ImageMeta[];
+  actions_open: number;
+  actions_total: number;
 }
 
 export interface CorrectiveAction {
   id: ID;
-  defectId: ID;
+  defect_id: ID;
   title: string;
-  owner: string;
-  dueDate: string; // ISO date (YYYY-MM-DD or ISO)
-  status: "open" | "in_progress" | "done";
-  completedAt?: string | null;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  description?: string | null;
+  owner?: string | null;
+  status: ActionStatus;
+  due_date?: string | null; // YYYY-MM-DD
+  completed_at?: string | null; // ISO datetime
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
 }
 
-export interface DashboardSummary {
-  totalDefects: number;
-  openDefects: number;
-  overdueActions: number;
-  bySeverity: Record<Severity, number>;
-  byStatus: Record<DefectStatus, number>;
+export interface DefectSearchResponse {
+  items: Defect[];
+  total: number;
+  limit: number;
+  offset: number;
+  sort: "created_at" | "updated_at" | "due_date" | "severity" | "status";
+  order: "asc" | "desc";
+}
+
+export interface DashboardCounts {
+  by_status: Record<DefectStatus, number>;
+  by_severity: Record<Severity, number>;
+  open_defects: number;
+  overdue_actions: number;
 }
 
 export interface AnalyticsSeriesPoint {
@@ -40,18 +85,45 @@ export interface AnalyticsSeriesPoint {
   value: number;
 }
 
-export interface AnalyticsResponse {
-  defectsBySeverity: AnalyticsSeriesPoint[];
-  defectsByStatus: AnalyticsSeriesPoint[];
-  actionsOverdueByOwner: AnalyticsSeriesPoint[];
+export interface TrendPoint {
+  date: string; // YYYY-MM-DD
+  created: number;
+  resolved: number;
 }
 
+export interface AnalyticsResponse {
+  range_days: number;
+  trends: TrendPoint[];
+  avg_days_to_resolve?: number | null;
+}
+
+export interface OverdueActionAlert {
+  action_id: ID;
+  defect_id: ID;
+  title: string;
+  owner?: string | null;
+  due_date: string; // YYYY-MM-DD
+  days_overdue: number;
+  defect_title: string;
+}
+
+export interface OverdueAlertsResponse {
+  as_of: string; // ISO datetime
+  count: number;
+  items: OverdueActionAlert[];
+}
+
+/**
+ * Frontend filtering model. We'll map to backend query params.
+ */
 export interface DefectListQuery {
   q?: string;
   severity?: Severity | "all";
   status?: DefectStatus | "all";
-  sort?: "createdAt" | "updatedAt" | "severity" | "status";
-  dir?: "asc" | "desc";
+  sort?: "created_at" | "updated_at" | "due_date" | "severity" | "status";
+  order?: "asc" | "desc";
+  limit?: number;
+  offset?: number;
 }
 
 export interface CreateDefectInput {
@@ -59,8 +131,13 @@ export interface CreateDefectInput {
   description: string;
   severity: Severity;
   status?: DefectStatus;
-  rootCause?: string | null;
-  imageBase64?: string | null;
+  root_cause?: string | null;
+
+  area?: string | null;
+  location?: string | null;
+  reported_by?: string | null;
+  assigned_to?: string | null;
+  due_date?: string | null; // YYYY-MM-DD
 }
 
 export interface UpdateDefectInput {
@@ -68,24 +145,38 @@ export interface UpdateDefectInput {
   description?: string;
   severity?: Severity;
   status?: DefectStatus;
-  rootCause?: string | null;
-  imageBase64?: string | null;
+
+  area?: string | null;
+  location?: string | null;
+  reported_by?: string | null;
+  assigned_to?: string | null;
+
+  root_cause?: string | null;
+  due_date?: string | null; // YYYY-MM-DD
 }
 
 export interface CreateActionInput {
-  defectId: ID;
+  defect_id: ID;
   title: string;
-  owner: string;
-  dueDate: string;
-  status?: "open" | "in_progress" | "done";
+  description?: string | null;
+  owner?: string | null;
+  due_date?: string | null; // YYYY-MM-DD
+  status?: ActionStatus;
 }
 
 export interface UpdateActionInput {
   title?: string;
-  owner?: string;
-  dueDate?: string;
-  status?: "open" | "in_progress" | "done";
-  completedAt?: string | null;
+  description?: string | null;
+  owner?: string | null;
+  due_date?: string | null; // YYYY-MM-DD
+  status?: ActionStatus;
+  completed_at?: string | null; // ISO datetime
+}
+
+export interface ImageUploadBase64Request {
+  file_name?: string | null;
+  content_type: string;
+  data_base64: string; // may include or not include data-url prefix; backend expects raw base64 bytes
 }
 
 /**

@@ -45,13 +45,26 @@ export default function CreateDefectPage() {
       description: description.trim(),
       severity,
       status,
-      rootCause: rootCause.trim() ? rootCause.trim() : null,
-      imageBase64,
+      root_cause: rootCause.trim() ? rootCause.trim() : null,
     };
 
     try {
       setSaving(true);
       const created = await api.createDefect(input);
+
+      if (imageBase64) {
+        // Best-effort upload; even if it fails, still navigate to defect.
+        try {
+          await api.uploadDefectImageBase64(created.id, {
+            file_name: "upload",
+            content_type: "image/png",
+            data_base64: imageBase64,
+          });
+        } catch {
+          // ignore; user can re-upload from edit page later if needed
+        }
+      }
+
       router.push(`/defects/${created.id}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create defect";
@@ -83,8 +96,9 @@ export default function CreateDefectPage() {
               <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as DefectStatus)}>
                 <option value="open">Open</option>
                 <option value="investigating">Investigating</option>
-                <option value="action_required">Action required</option>
+                <option value="corrective_action">Corrective action</option>
                 <option value="resolved">Resolved</option>
+                <option value="verified">Verified</option>
                 <option value="closed">Closed</option>
               </Select>
               <Input
@@ -92,7 +106,7 @@ export default function CreateDefectPage() {
                 value={rootCause}
                 onChange={(e) => setRootCause(e.target.value)}
                 placeholder="e.g., unclear work instruction…"
-                hint="Can be filled later during investigation."
+                hint="Required if creating directly as resolved/verified/closed."
               />
             </div>
 

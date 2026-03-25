@@ -2,11 +2,12 @@ import type { CorrectiveAction } from "@/lib/api/types";
 
 // PUBLIC_INTERFACE
 export function isOverdue(action: CorrectiveAction): boolean {
-  /** Returns true if dueDate is before today and action is not done. */
-  if (action.status === "done") return false;
+  /** Returns true if due_date is before today and action is not done/canceled. */
+  if (action.status === "done" || action.status === "canceled") return false;
+  if (!action.due_date) return false;
 
   // Support YYYY-MM-DD or full ISO.
-  const due = new Date(action.dueDate.length <= 10 ? `${action.dueDate}T00:00:00` : action.dueDate);
+  const due = new Date(action.due_date.length <= 10 ? `${action.due_date}T00:00:00` : action.due_date);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return due.getTime() < today.getTime();

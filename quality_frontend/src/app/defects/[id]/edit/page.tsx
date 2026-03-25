@@ -57,8 +57,13 @@ export default function EditDefectPage() {
         setDescription(d.description);
         setSeverity(d.severity);
         setStatus(d.status);
-        setRootCause(d.rootCause || "");
-        setImageBase64(d.imageBase64 || null);
+        setRootCause(d.root_cause || "");
+        // If the defect has stored images, show the first image via its URL; otherwise empty.
+        setImageBase64(
+          d.images && d.images.length > 0
+            ? `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"}${d.images[0].url}`
+            : null,
+        );
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to load defect";
         setError(message);
@@ -92,8 +97,7 @@ export default function EditDefectPage() {
       description: description.trim(),
       severity,
       status,
-      rootCause: rootCause.trim() ? rootCause.trim() : null,
-      imageBase64,
+      root_cause: rootCause.trim() ? rootCause.trim() : null,
     };
 
     try {
@@ -157,8 +161,9 @@ export default function EditDefectPage() {
               <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as DefectStatus)}>
                 <option value="open">Open</option>
                 <option value="investigating">Investigating</option>
-                <option value="action_required">Action required</option>
+                <option value="corrective_action">Corrective action</option>
                 <option value="resolved">Resolved</option>
+                <option value="verified">Verified</option>
                 <option value="closed">Closed</option>
               </Select>
               <Input
@@ -182,7 +187,12 @@ export default function EditDefectPage() {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   const b64 = await fileToBase64(file);
-                  setImageBase64(b64);
+                  const meta = await api.uploadDefectImageBase64(id, {
+                    file_name: file.name,
+                    content_type: file.type || "application/octet-stream",
+                    data_base64: b64,
+                  });
+                  setImageBase64(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"}${meta.url}`);
                 }}
               />
               <p className="mt-1 text-xs text-slate-500">Uploading a new file replaces the current preview.</p>

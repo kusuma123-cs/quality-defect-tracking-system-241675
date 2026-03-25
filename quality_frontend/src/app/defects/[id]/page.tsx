@@ -81,10 +81,10 @@ export default function DefectDetailPage() {
     try {
       setSavingAction(true);
       await api.createAction({
-        defectId: id,
+        defect_id: id,
         title: actionTitle.trim(),
         owner: actionOwner.trim(),
-        dueDate: actionDue.trim(),
+        due_date: actionDue.trim(),
       });
       setActionTitle("");
       setActionOwner("");
@@ -132,7 +132,7 @@ export default function DefectDetailPage() {
           <Card>
             <CardHeader
               title={defect.title}
-              subtitle={`Created ${formatDate(defect.createdAt)} • Updated ${formatDate(defect.updatedAt)}`}
+              subtitle={`Created ${formatDate(defect.created_at)} • Updated ${formatDate(defect.updated_at)}`}
               right={
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/defects/${defect.id}/edit`}>
@@ -148,7 +148,7 @@ export default function DefectDetailPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <SeverityBadge severity={defect.severity} />
                 <StatusBadge status={defect.status} />
-                {defect.rootCause ? <Badge tone="cyan">Root cause captured</Badge> : <Badge tone="amber">Root cause pending</Badge>}
+                {defect.root_cause ? <Badge tone="cyan">Root cause captured</Badge> : <Badge tone="amber">Root cause pending</Badge>}
               </div>
 
               <Divider />
@@ -158,11 +158,11 @@ export default function DefectDetailPage() {
                   <h3 className="text-sm font-semibold text-slate-900">Description</h3>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{defect.description}</p>
 
-                  {defect.rootCause ? (
+                  {defect.root_cause ? (
                     <>
                       <Divider />
                       <h3 className="text-sm font-semibold text-slate-900">Root cause</h3>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{defect.rootCause}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{defect.root_cause}</p>
                     </>
                   ) : null}
                 </div>
@@ -170,9 +170,13 @@ export default function DefectDetailPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">Image</h3>
                   <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    {defect.imageBase64 ? (
+                    {defect.images && defect.images.length > 0 ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img alt="Defect image" src={defect.imageBase64} className="max-h-80 w-full rounded-xl object-contain bg-white" />
+                      <img
+                        alt="Defect image"
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"}${defect.images[0].url}`}
+                        className="max-h-80 w-full rounded-xl object-contain bg-white"
+                      />
                     ) : (
                       <p className="text-sm text-slate-600">No image attached.</p>
                     )}
@@ -219,10 +223,13 @@ export default function DefectDetailPage() {
                           <div className="min-w-0">
                             <div className="truncate font-semibold text-slate-900">{a.title}</div>
                             <div className="mt-1 text-sm text-slate-600">
-                              Owner: <span className="font-medium text-slate-800">{a.owner}</span>
+                              Owner: <span className="font-medium text-slate-800">{a.owner || "Unassigned"}</span>
                             </div>
                             <div className="mt-1 text-sm text-slate-600">
-                              Due: <span className={overdue ? "font-semibold text-red-700" : "text-slate-800"}>{formatDate(a.dueDate)}</span>
+                              Due:{" "}
+                              <span className={overdue ? "font-semibold text-red-700" : "text-slate-800"}>
+                                {a.due_date ? formatDate(a.due_date) : "—"}
+                              </span>
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">

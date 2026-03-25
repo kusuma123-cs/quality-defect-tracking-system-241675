@@ -183,11 +183,13 @@ export function StatusBadge({ status }: { status: DefectStatus }) {
       ? "red"
       : status === "investigating"
         ? "blue"
-        : status === "action_required"
+        : status === "corrective_action"
           ? "amber"
           : status === "resolved"
             ? "cyan"
-            : "slate";
+            : status === "verified"
+              ? "green"
+              : "slate";
   return <Badge tone={tone}>{status.replaceAll("_", " ").toUpperCase()}</Badge>;
 }
 

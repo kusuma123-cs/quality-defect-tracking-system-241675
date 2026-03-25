@@ -14,16 +14,21 @@ function parseQuery(sp: ReturnType<typeof useSearchParams>): DefectListQuery {
   const status = (sp.get("status") as DefectStatus | "all" | null) || "all";
 
   const sortParam = sp.get("sort");
-  const dirParam = sp.get("dir");
+  const orderParam = sp.get("order");
 
   const sort: NonNullable<DefectListQuery["sort"]> =
-    sortParam === "createdAt" || sortParam === "updatedAt" || sortParam === "severity" || sortParam === "status"
+    sortParam === "created_at" ||
+    sortParam === "updated_at" ||
+    sortParam === "due_date" ||
+    sortParam === "severity" ||
+    sortParam === "status"
       ? sortParam
-      : "updatedAt";
+      : "updated_at";
 
-  const dir: NonNullable<DefectListQuery["dir"]> = dirParam === "asc" || dirParam === "desc" ? dirParam : "desc";
+  const order: NonNullable<DefectListQuery["order"]> =
+    orderParam === "asc" || orderParam === "desc" ? orderParam : "desc";
 
-  return { q, severity, status, sort, dir };
+  return { q, severity, status, sort, order };
 }
 
 function toSearch(query: DefectListQuery) {
@@ -32,7 +37,7 @@ function toSearch(query: DefectListQuery) {
   if (query.severity && query.severity !== "all") sp.set("severity", query.severity);
   if (query.status && query.status !== "all") sp.set("status", query.status);
   if (query.sort) sp.set("sort", query.sort);
-  if (query.dir) sp.set("dir", query.dir);
+  if (query.order) sp.set("order", query.order);
   const s = sp.toString();
   return s ? `?${s}` : "";
 }
@@ -111,14 +116,15 @@ export default function DefectsClientPage() {
               <option value="all">All</option>
               <option value="open">Open</option>
               <option value="investigating">Investigating</option>
-              <option value="action_required">Action required</option>
+              <option value="corrective_action">Corrective action</option>
               <option value="resolved">Resolved</option>
+              <option value="verified">Verified</option>
               <option value="closed">Closed</option>
             </Select>
             <div className="grid grid-cols-2 gap-3">
               <Select
                 label="Sort"
-                value={query.sort || "updatedAt"}
+                value={query.sort || "updated_at"}
                 onChange={(e) =>
                   setQuery({
                     ...query,
@@ -126,18 +132,19 @@ export default function DefectsClientPage() {
                   })
                 }
               >
-                <option value="updatedAt">Last updated</option>
-                <option value="createdAt">Created</option>
+                <option value="updated_at">Last updated</option>
+                <option value="created_at">Created</option>
+                <option value="due_date">Due date</option>
                 <option value="severity">Severity</option>
                 <option value="status">Status</option>
               </Select>
               <Select
-                label="Dir"
-                value={query.dir || "desc"}
+                label="Order"
+                value={query.order || "desc"}
                 onChange={(e) =>
                   setQuery({
                     ...query,
-                    dir: e.target.value as NonNullable<DefectListQuery["dir"]>,
+                    order: e.target.value as NonNullable<DefectListQuery["order"]>,
                   })
                 }
               >
@@ -182,7 +189,7 @@ export default function DefectsClientPage() {
                             <td className="px-4 py-3">
                               <StatusBadge status={d.status} />
                             </td>
-                            <td className="px-4 py-3 text-slate-600">{formatDate(d.updatedAt)}</td>
+                            <td className="px-4 py-3 text-slate-600">{formatDate(d.updated_at)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -204,7 +211,7 @@ export default function DefectsClientPage() {
                             <StatusBadge status={d.status} />
                           </div>
                         </div>
-                        <div className="mt-3 text-xs text-slate-500">Updated {formatDate(d.updatedAt)}</div>
+                        <div className="mt-3 text-xs text-slate-500">Updated {formatDate(d.updated_at)}</div>
                       </div>
                     </Link>
                   ))}

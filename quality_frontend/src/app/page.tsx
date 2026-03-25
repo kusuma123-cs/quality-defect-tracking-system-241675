@@ -63,9 +63,6 @@ export default function DashboardPage() {
         <Card>
           <CardBody>
             <p className="text-sm text-red-600">{error}</p>
-            <p className="mt-2 text-xs text-slate-500">
-              The UI can still operate using mock data if CRUD endpoints are not yet available.
-            </p>
           </CardBody>
         </Card>
       ) : summary && analytics ? (
@@ -74,25 +71,23 @@ export default function DashboardPage() {
             <Card>
               <CardBody>
                 <div className="text-xs font-medium text-slate-500">Total defects</div>
-                <div className="mt-1 text-2xl font-semibold text-slate-900">{summary.totalDefects}</div>
+                <div className="mt-1 text-2xl font-semibold text-slate-900">
+                  {Object.values(summary.by_status).reduce((s, n) => s + n, 0)}
+                </div>
               </CardBody>
             </Card>
             <Card>
               <CardBody>
                 <div className="text-xs font-medium text-slate-500">Open / active</div>
-                <div className="mt-1 text-2xl font-semibold text-slate-900">{summary.openDefects}</div>
+                <div className="mt-1 text-2xl font-semibold text-slate-900">{summary.open_defects}</div>
               </CardBody>
             </Card>
             <Card>
               <CardBody>
                 <div className="text-xs font-medium text-slate-500">Overdue actions</div>
                 <div className="mt-1 flex items-center gap-2">
-                  <div className="text-2xl font-semibold text-slate-900">{summary.overdueActions}</div>
-                  {summary.overdueActions > 0 ? (
-                    <Badge tone="red">Needs attention</Badge>
-                  ) : (
-                    <Badge tone="green">On track</Badge>
-                  )}
+                  <div className="text-2xl font-semibold text-slate-900">{summary.overdue_actions}</div>
+                  {summary.overdue_actions > 0 ? <Badge tone="red">Needs attention</Badge> : <Badge tone="green">On track</Badge>}
                 </div>
               </CardBody>
             </Card>
@@ -100,11 +95,8 @@ export default function DashboardPage() {
               <CardBody>
                 <div className="text-xs font-medium text-slate-500">Workflow</div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(summary.byStatus).map(([k, v]) => (
-                    <Badge
-                      key={k}
-                      tone={k === "open" || k === "action_required" ? "amber" : "slate"}
-                    >
+                  {Object.entries(summary.by_status).map(([k, v]) => (
+                    <Badge key={k} tone={k === "open" || k === "corrective_action" ? "amber" : "slate"}>
                       {k.replaceAll("_", " ")}: {v}
                     </Badge>
                   ))}
@@ -114,36 +106,30 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <DonutChart title="Defects by severity" data={analytics.defectsBySeverity} />
-            <BarChart title="Defects by status" data={analytics.defectsByStatus} />
+            <DonutChart
+              title="Defects by severity"
+              data={Object.entries(summary.by_severity).map(([label, value]) => ({ label, value }))}
+            />
+            <BarChart
+              title="Trend (created per day)"
+              data={analytics.trends.slice(-10).map((p) => ({ label: p.date.slice(5), value: p.created }))}
+            />
           </div>
 
           <Card>
             <CardHeader
-              title="Overdue actions"
-              subtitle="Owners with overdue corrective actions"
+              title="Resolution speed"
+              subtitle="Average days to resolve (resolved/verified/closed)"
               right={
                 <Link href="/defects">
-                  <Button variant="secondary">Manage actions</Button>
+                  <Button variant="secondary">Manage defects</Button>
                 </Link>
               }
             />
             <CardBody>
-              {analytics.actionsOverdueByOwner.length === 0 ? (
-                <p className="text-sm text-slate-600">No overdue actions.</p>
-              ) : (
-                <div className="grid gap-2">
-                  {analytics.actionsOverdueByOwner.map((p) => (
-                    <div
-                      key={p.label}
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
-                    >
-                      <div className="text-sm font-medium text-slate-800">{p.label}</div>
-                      <Badge tone="red">{p.value} overdue</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="text-sm text-slate-700">
+                {analytics.avg_days_to_resolve == null ? "No resolved defects yet." : `${analytics.avg_days_to_resolve.toFixed(1)} days`}
+              </div>
             </CardBody>
           </Card>
         </>
